@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Environment variables / secrets
+.env
+.env.*
+
+# Logs
+*.log
+
+# Database files
+*.db
+*.sqlite
+
+# OS files
+.DS_Store
+
+# Editor files
+.vscode/
+
+# Build files
+dist/
+build/
+
+# Temporary files
+*.tmp

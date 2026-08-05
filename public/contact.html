@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact us · Internlog</title>
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css">
+<meta name="description" content="Honest, anonymous internship reviews by students, for students — pay, difficulty, and what the day-to-day is really like.">
+<meta property="og:title" content="InternLog">
+<meta property="og:description" content="Honest, anonymous internship reviews by students, for students.">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav class="topbar">
+  <a href="index.html" class="brand"><img src="logo-nav.png" alt="" class="brand-logo">Internlog</a>
+  <div class="nav-links">
+    <a href="index.html">Search</a>
+    <a href="submit.html">Write a review</a>
+    <a href="leaderboard.html">Leaderboards</a>
+    <a href="contact.html" class="active">Contact us</a>
+  </div>
+</nav>
+
+<main class="page">
+  <h1>Don't see your company?</h1>
+  <p style="color:var(--text-soft); max-width:560px;">If a review already created a pending page for your company, or your company isn't listed at all, tell us here. We manually review each one and assign a verified tier. This is also the right place to report a specific review — email us with the company name and details and we'll investigate.</p>
+
+  <div id="notice"></div>
+
+  <form class="form-card" id="contactForm">
+    <div class="field">
+      <label for="companyName">Company name</label>
+      <input type="text" id="companyName" required>
+    </div>
+
+    <div class="field">
+      <label for="contactName">Your name <span class="hint">(optional)</span></label>
+      <input type="text" id="contactName">
+    </div>
+
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" required>
+    </div>
+
+    <div class="field">
+      <label for="message">Message <span class="hint">(what does the company do, roughly how many employees, any locations)</span></label>
+      <textarea id="message" placeholder="Helps us assign the right tier..."></textarea>
+    </div>
+
+    <button type="submit" id="contactSubmitBtn">Send</button>
+  </form>
+</main>
+
+<footer>Built by students, for students. Reviews are user-submitted and not verified by Internlog. <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a></footer>
+
+<script src="app.js"></script>
+<script>
+document.getElementById('contactForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const notice = document.getElementById('notice');
+  notice.innerHTML = '';
+
+  const payload = {
+    companyName: document.getElementById('companyName').value.trim(),
+    contactName: document.getElementById('contactName').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    message: document.getElementById('message').value.trim()
+  };
+
+  const btn = document.getElementById('contactSubmitBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="btn-spinner"></span>Sending...`;
+
+  try {
+    await api('/api/contact', { method: 'POST', body: JSON.stringify(payload) });
+    notice.innerHTML = `<div class="notice success">Thanks — we've got your request and will follow up by email.</div>`;
+    e.target.reset();
+  } catch (err) {
+    notice.innerHTML = `<div class="notice error">${escapeHtml(err.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send';
+  }
+});
+</script>
+</body>
+</html>

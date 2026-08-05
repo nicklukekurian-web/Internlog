@@ -1,0 +1,142 @@
+[
+  {
+    "id": "c1",
+    "name": "Google",
+    "tier": 3,
+    "industry": "Technology",
+    "verified": true
+  },
+  {
+    "id": "c2",
+    "name": "JPMorgan Chase",
+    "tier": 3,
+    "industry": "Finance",
+    "verified": true
+  },
+  {
+    "id": "c3",
+    "name": "Regional Credit Union of Texas",
+    "tier": 2,
+    "industry": "Finance",
+    "verified": true
+  },
+  {
+    "id": "c4",
+    "name": "Smith & Associates Law Office",
+    "tier": 1,
+    "industry": "Legal",
+    "verified": true
+  },
+  {
+    "id": "c5",
+    "name": "Lakeside Marketing Co.",
+    "tier": 1,
+    "industry": "Marketing",
+    "verified": true
+  },
+  {
+    "id": "c6",
+    "name": "ExxonMobil",
+    "tier": 3,
+    "industry": "Energy",
+    "verified": true
+  },
+  {
+    "id": "c7",
+    "name": "American Airlines",
+    "tier": 3,
+    "industry": "Airline",
+    "verified": true
+  },
+  {
+    "id": "c8",
+    "name": "Texas Instruments",
+    "tier": 3,
+    "industry": "Semiconductors",
+    "verified": true
+  },
+  {
+    "id": "c9",
+    "name": "AT&T",
+    "tier": 3,
+    "industry": "Telecommunications",
+    "verified": true
+  },
+  {
+    "id": "c10",
+    "name": "McKesson",
+    "tier": 3,
+    "industry": "Healthcare / Pharmaceutical Distribution",
+    "verified": true
+  },
+  {
+    "id": "c11",
+    "name": "Raytheon (RTX)",
+    "tier": 3,
+    "industry": "Aerospace & Defense",
+    "verified": true
+  },
+  {
+    "id": "c12",
+    "name": "State Farm",
+    "tier": 3,
+    "industry": "Insurance",
+    "verified": true
+  },
+  {
+    "id": "c13",
+    "name": "Amazon",
+    "tier": 3,
+    "industry": "Technology / E-commerce",
+    "verified": true
+  },
+  {
+    "id": "c14",
+    "name": "RealPage",
+    "tier": 2,
+    "industry": "Real Estate Software",
+    "verified": true
+  },
+  {
+    "id": "c15",
+    "name": "Fossil Group",
+    "tier": 2,
+    "industry": "Consumer Goods / Accessories",
+    "verified": true
+  },
+  {
+    "id": "c16",
+    "name": "Comerica Bank",
+    "tier": 2,
+    "industry": "Finance",
+    "verified": true
+  },
+  {
+    "id": "c17",
+    "name": "Texas Capital Bank",
+    "tier": 2,
+    "industry": "Finance",
+    "verified": true
+  },
+  {
+    "id": "c18",
+    "name": "Telecom Corridor Design Studio",
+    "tier": 1,
+    "industry": "Design / Marketing",
+    "verified": true
+  },
+  {
+    "id": "c19",
+    "name": "Coit Road Consulting Group",
+    "tier": 1,
+    "industry": "Business Consulting",
+    "verified": true
+  },
+  {
+    "id": "c_mry3jt56ynov9",
+    "name": "IBM",
+    "tier": 3,
+    "industry": "Technology",
+    "verified": true
+  }
+]

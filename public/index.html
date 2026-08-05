@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Internlog</title>
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css">
+<meta name="description" content="Honest, anonymous internship reviews by students, for students — pay, difficulty, and what the day-to-day is really like.">
+<meta property="og:title" content="InternLog">
+<meta property="og:description" content="Honest, anonymous internship reviews by students, for students.">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav class="topbar glass" style="position:fixed; width:100%;">
+  <a href="index.html" class="brand"><img src="logo-nav.png" alt="" class="brand-logo">Internlog</a>
+  <div class="nav-links">
+    <a href="index.html" class="active">Search</a>
+    <a href="submit.html">Write a review</a>
+    <a href="leaderboard.html">Leaderboards</a>
+    <a href="contact.html">Contact us</a>
+  </div>
+</nav>
+
+<section class="hero-dark">
+  <div class="hero-orb o1"></div>
+  <div class="hero-orb o2"></div>
+  <div class="hero-orb o3"></div>
+
+  <div class="hero-dark-content">
+    <h1>Know what you're walking into.</h1>
+    <p>Real reviews from real interns — pay, difficulty to land the role, day-to-day work, and honest pros and cons, organized by company tier.</p>
+
+    <div class="hero-actions">
+      <button class="btn-gold-solid" onclick="window.location.href='submit.html'">Write a review</button>
+      <a class="btn-glass" href="leaderboard.html">See leaderboards</a>
+    </div>
+
+    <div class="hero-dark-search">
+      <div class="glow-search-wrap">
+        <input type="text" id="searchInput" placeholder="Search a company (e.g. Google, a local firm...)">
+      </div>
+      <input type="text" id="roleInput" placeholder="Advanced: filter by role">
+      <button id="searchBtn" class="btn-gold-solid">Search</button>
+    </div>
+  </div>
+</section>
+
+<section class="review-rail-section">
+  <div class="review-rail-heading">Recent reviews from Internlog</div>
+  <div class="review-rail" id="reviewRail">
+    <div class="review-rail-track" id="reviewRailTrack">
+      <div class="skeleton-mini-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div><div class="skeleton skeleton-line w-80"></div></div>
+      <div class="skeleton-mini-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div><div class="skeleton skeleton-line w-80"></div></div>
+      <div class="skeleton-mini-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div><div class="skeleton skeleton-line w-80"></div></div>
+      <div class="skeleton-mini-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div><div class="skeleton skeleton-line w-80"></div></div>
+    </div>
+  </div>
+</section>
+
+<main class="page" style="padding-top:24px;">
+  <div class="tier-tabs" id="tierTabs">
+    <button class="tier-tab active" data-tier="">All tiers</button>
+    <button class="tier-tab" data-tier="3">Tier 3 · Gold — National / global</button>
+    <button class="tier-tab" data-tier="2">Tier 2 · Silver — State / regional</button>
+    <button class="tier-tab" data-tier="1">Tier 1 · Bronze — Local / entry-level</button>
+  </div>
+
+  <div class="company-grid" id="companyGrid">
+    <div class="skeleton-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div><div class="skeleton skeleton-line w-80"></div></div>
+    <div class="skeleton-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div><div class="skeleton skeleton-line w-80"></div></div>
+    <div class="skeleton-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div><div class="skeleton skeleton-line w-80"></div></div>
+    <div class="skeleton-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div><div class="skeleton skeleton-line w-80"></div></div>
+    <div class="skeleton-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div><div class="skeleton skeleton-line w-80"></div></div>
+    <div class="skeleton-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-40"></div><div class="skeleton skeleton-line w-80"></div></div>
+  </div>
+  <div class="empty-state" id="emptyState" style="display:none;">
+    No companies match your search yet. <a href="contact.html">Let us know</a> if you'd like to see one added.
+  </div>
+</main>
+
+<footer>Built by students, for students. Reviews are user-submitted and not verified by Internlog. <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a></footer>
+
+<script src="stars.js"></script>
+<script src="app.js"></script>
+<script>
+let activeTier = "";
+
+async function loadReviewRail() {
+  const track = document.getElementById('reviewRailTrack');
+  try {
+    const reviews = await api('/api/reviews/recent?limit=14');
+    if (!reviews.length) {
+      document.getElementById('reviewRail').style.display = 'none';
+      return;
+    }
+    const cardsHtml = reviews.map(r => `
+      <a class="review-mini-card" href="company.html?id=${r.companyId}">
+        <div class="review-mini-top">
+          <div class="review-mini-company">
+            <span class="medal-icon">${medalIcon(r.companyTier, 16)}</span>
+            ${escapeHtml(r.companyName)}
+          </div>
+          <span class="review-score ${ratingClass(r.rating)}" style="font-size:0.95rem; padding:1px 9px;">${r.rating}/10</span>
+        </div>
+        <div class="review-mini-role">${escapeHtml(r.role)}</div>
+        <div class="review-mini-text">${escapeHtml(r.pros)}</div>
+      </a>
+    `).join('');
+    track.innerHTML = cardsHtml + cardsHtml;
+  } catch (e) {
+    document.getElementById('reviewRail').style.display = 'none';
+  }
+}
+
+async function searchAndScroll() {
+  await loadCompanies();
+  document.getElementById('tierTabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function loadCompanies() {
+  const search = document.getElementById('searchInput').value.trim();
+  const role = document.getElementById('roleInput').value.trim();
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (activeTier) params.set('tier', activeTier);
+  if (role) params.set('role', role);
+
+  const companies = await api(`/api/companies?${params.toString()}`);
+  renderCompanies(companies);
+}
+
+function tierLabel(tier) {
+  return tier === 3 ? 'Tier 3 · Gold' : tier === 2 ? 'Tier 2 · Silver' : 'Tier 1 · Bronze';
+}
+
+function renderCompanies(companies) {
+  const grid = document.getElementById('companyGrid');
+  const empty = document.getElementById('emptyState');
+  grid.innerHTML = '';
+
+  if (!companies.length) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  companies.forEach(c => {
+    const card = document.createElement('a');
+    card.href = `company.html?id=${c.id}`;
+    card.className = 'company-card';
+    card.innerHTML = `
+      <div class="company-meta">
+        <h3>${escapeHtml(c.name)}</h3>
+        <span class="medal-icon">${medalIcon(c.tier)}</span>
+      </div>
+      <div class="common-role">
+        ${c.verified === false ? pendingBadge() : ''}
+        ${c.industry || ''}${c.stats.mostCommonRole ? ' · Most common role: ' + escapeHtml(c.stats.mostCommonRole) : ''}
+      </div>
+      <div class="stat-row">
+        <div class="stat"><span class="stat-num ${ratingClass(c.stats.avgRating)}">${c.stats.avgRating ?? '—'}</span><span class="stat-label">Avg rating /10</span></div>
+        <div class="stat"><span class="stat-num">${c.stats.avgDifficulty ?? '—'}</span><span class="stat-label">Difficulty to get /10</span></div>
+        <div class="stat"><span class="stat-num">${c.stats.reviewCount}</span><span class="stat-label">Reviews</span></div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById('searchBtn').addEventListener('click', searchAndScroll);
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') searchAndScroll(); });
+document.getElementById('roleInput').addEventListener('keydown', e => { if (e.key === 'Enter') searchAndScroll(); });
+
+document.querySelectorAll('.tier-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tier-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTier = btn.dataset.tier;
+    loadCompanies();
+  });
+});
+
+loadReviewRail();
+loadCompanies();
+</script>
+</body>
+</html>

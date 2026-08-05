@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboards · Internlog</title>
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css">
+<meta name="description" content="Honest, anonymous internship reviews by students, for students — pay, difficulty, and what the day-to-day is really like.">
+<meta property="og:title" content="InternLog">
+<meta property="og:description" content="Honest, anonymous internship reviews by students, for students.">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav class="topbar">
+  <a href="index.html" class="brand"><img src="logo-nav.png" alt="" class="brand-logo">Internlog</a>
+  <div class="nav-links">
+    <a href="index.html">Search</a>
+    <a href="submit.html">Write a review</a>
+    <a href="leaderboard.html" class="active">Leaderboards</a>
+    <a href="contact.html">Contact us</a>
+  </div>
+</nav>
+
+<main class="page">
+  <h1>Leaderboards</h1>
+  <p style="color:var(--ink-soft);">Ranked by average review score. A company needs at least one review to appear — the more people who use Internlog, the more meaningful these rankings get.</p>
+
+  <div class="tier-tabs" id="tierTabs">
+    <button class="tier-tab active" data-tier="3">Tier 3 · Gold</button>
+    <button class="tier-tab" data-tier="2">Tier 2 · Silver</button>
+    <button class="tier-tab" data-tier="1">Tier 1 · Bronze</button>
+  </div>
+
+  <div id="board"></div>
+</main>
+
+<footer>Built by students, for students. Reviews are user-submitted and not verified by Internlog. <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a></footer>
+<script src="app.js"></script>
+<script>
+async function loadBoard(tier) {
+  const board = document.getElementById('board');
+  const ranked = await api(`/api/leaderboard?tier=${tier}`);
+
+  if (!ranked.length) {
+    board.innerHTML = `<div class="empty-state">No reviews yet for this tier. Once a few come in, the top companies will show up here.</div>`;
+    return;
+  }
+
+  board.innerHTML = ranked.map((c, i) => `
+    <div class="leaderboard-row">
+      <div class="rank-num">#${i + 1}</div>
+      <div style="flex:1;">
+        <a href="company.html?id=${c.id}" style="font-weight:600;">${escapeHtml(c.name)}</a>
+        <div class="common-role">${c.stats.reviewCount} review${c.stats.reviewCount === 1 ? '' : 's'}${c.stats.mostCommonRole ? ' · Most common role: ' + escapeHtml(c.stats.mostCommonRole) : ''}</div>
+      </div>
+      <span class="medal-icon">${medalIcon(c.tier)}</span>
+      <div class="stat"><span class="stat-num ${ratingClass(c.stats.avgRating)}">${c.stats.avgRating}</span><span class="stat-label">Avg /10</span></div>
+    </div>
+  `).join('');
+}
+
+document.querySelectorAll('.tier-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tier-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadBoard(btn.dataset.tier);
+  });
+});
+
+loadBoard(3);
+</script>
+</body>
+</html>

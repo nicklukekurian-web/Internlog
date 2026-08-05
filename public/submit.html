@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Write a review · Internlog</title>
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css">
+<meta name="description" content="Honest, anonymous internship reviews by students, for students — pay, difficulty, and what the day-to-day is really like.">
+<meta property="og:title" content="InternLog">
+<meta property="og:description" content="Honest, anonymous internship reviews by students, for students.">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav class="topbar">
+  <a href="index.html" class="brand"><img src="logo-nav.png" alt="" class="brand-logo">Internlog</a>
+  <div class="nav-links">
+    <a href="index.html">Search</a>
+    <a href="submit.html" class="active">Write a review</a>
+    <a href="leaderboard.html">Leaderboards</a>
+    <a href="contact.html">Contact us</a>
+  </div>
+</nav>
+
+<main class="page">
+  <h1>Write a review</h1>
+  <p style="color:var(--text-soft); max-width:560px;">Your review is anonymous — we never ask for your name. Sharing your hourly pay is optional. Don't see your company listed? Just type its name — we'll create a page for it pending verification.</p>
+
+  <div id="notice"></div>
+
+  <form class="form-card" id="reviewForm">
+    <div class="field">
+      <label for="companyInput">Company</label>
+      <input type="text" id="companyInput" list="companyList" placeholder="Start typing a company name..." required>
+      <datalist id="companyList"></datalist>
+      <span class="hint">Don't see it in the list? Just type the full name — we'll create a pending page for it.</span>
+    </div>
+
+    <div class="field">
+      <label for="role">Your exact position / role</label>
+      <input type="text" id="role" placeholder="e.g. Marketing Intern, Backend Engineering Intern" required>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="rating">Overall rating (1–10) <span class="range-value" id="ratingVal">7</span></label>
+        <input type="range" id="rating" min="1" max="10" value="7">
+      </div>
+      <div class="field">
+        <label for="difficulty">Difficulty to get this position (1–10) <span class="range-value" id="difficultyVal">5</span></label>
+        <input type="range" id="difficulty" min="1" max="10" value="5">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="hourlyPay">Hourly pay <span class="hint">(optional — leave blank if you'd rather not say)</span></label>
+      <input type="number" id="hourlyPay" min="0" step="0.5" placeholder="e.g. 22.50">
+    </div>
+
+    <div class="field">
+      <label for="location">Internship location</label>
+      <input type="text" id="location" placeholder="e.g. Austin, TX or Remote">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="startDate">Start date</label>
+        <input type="date" id="startDate">
+      </div>
+      <div class="field">
+        <label for="endDate">End date</label>
+        <input type="date" id="endDate">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="pros">Pros <span class="hint">(250 words max)</span></label>
+      <textarea id="pros" placeholder="What was good about it?" required></textarea>
+      <div class="word-counter" id="prosCounter">0 / 250 words</div>
+    </div>
+
+    <div class="field">
+      <label for="cons">Cons <span class="hint">(250 words max)</span></label>
+      <textarea id="cons" placeholder="What would you warn a friend about?" required></textarea>
+      <div class="word-counter" id="consCounter">0 / 250 words</div>
+    </div>
+
+    <div class="field">
+      <label for="dayInLife">A day in the life <span class="hint">(250 words max)</span></label>
+      <textarea id="dayInLife" placeholder="Walk through a typical day — morning to evening." required></textarea>
+      <div class="word-counter" id="dayInLifeCounter">0 / 250 words</div>
+    </div>
+
+    <div class="consent-box">
+      <input type="checkbox" id="agreeCheckbox" required>
+      <label for="agreeCheckbox">I confirm that I am at least 16 years old, this review describes my own first-hand internship experience, all factual statements are true to the best of my knowledge, opinions are my own, I am not employed by or otherwise affiliated with the company in an undisclosed way, and the review does not contain confidential information or personal data about other people. I have read the <a href="terms.html" target="_blank">Review Policy</a> and <a href="privacy.html" target="_blank">Privacy Policy</a>.</label>
+    </div>
+
+    <button type="submit" id="submitReviewBtn">Submit review</button>
+  </form>
+</main> 
+
+<footer>Built by students, for students. Reviews are user-submitted and not verified by Internlog. <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a></footer>
+
+<script src="app.js"></script>
+<script>
+const WORD_LIMIT = 250;
+const FIELDS = [
+  { id: 'pros', counterId: 'prosCounter', label: 'Pros' },
+  { id: 'cons', counterId: 'consCounter', label: 'Cons' },
+  { id: 'dayInLife', counterId: 'dayInLifeCounter', label: 'A day in the life' }
+];
+
+async function loadCompanies() {
+  const companies = await api('/api/companies');
+  const list = document.getElementById('companyList');
+  list.innerHTML = companies
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(c => `<option value="${escapeHtml(c.name)}"></option>`)
+    .join('');
+
+  const preselectId = getQueryParam('companyId');
+  if (preselectId) {
+    const match = companies.find(c => c.id === preselectId);
+    if (match) document.getElementById('companyInput').value = match.name;
+  }
+}
+
+document.getElementById('rating').addEventListener('input', e => {
+  document.getElementById('ratingVal').textContent = e.target.value;
+});
+document.getElementById('difficulty').addEventListener('input', e => {
+  document.getElementById('difficultyVal').textContent = e.target.value;
+});
+
+function updateCounter(field) {
+  const count = wordCount(document.getElementById(field.id).value);
+  const counterEl = document.getElementById(field.counterId);
+  counterEl.textContent = `${count} / ${WORD_LIMIT} words`;
+  counterEl.classList.toggle('over-limit', count > WORD_LIMIT);
+  return count;
+}
+
+FIELDS.forEach(field => {
+  document.getElementById(field.id).addEventListener('input', () => updateCounter(field));
+});
+
+document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const notice = document.getElementById('notice');
+  notice.innerHTML = '';
+
+  const overLimit = FIELDS.filter(field => updateCounter(field) > WORD_LIMIT);
+  if (overLimit.length) {
+    const names = overLimit.map(f => f.label).join(', ');
+    notice.innerHTML = `<div class="notice error">Please keep each section under ${WORD_LIMIT} words. Over the limit: ${names}.</div>`;
+    return;
+  }
+
+  const companyName = document.getElementById('companyInput').value.trim();
+  if (!companyName) {
+    notice.innerHTML = `<div class="notice error">Please enter a company name.</div>`;
+    return;
+  }
+
+  if (!document.getElementById('agreeCheckbox').checked) {
+    notice.innerHTML = `<div class="notice error">Please confirm the checkbox above before submitting.</div>`;
+    return;
+  }
+
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  if (startDate && endDate && endDate < startDate) {
+    notice.innerHTML = `<div class="notice error">End date can't be before the start date.</div>`;
+    return;
+  }
+
+  const payload = {
+    companyName,
+    role: document.getElementById('role').value.trim(),
+    rating: Number(document.getElementById('rating').value),
+    difficultyToGet: Number(document.getElementById('difficulty').value),
+    hourlyPay: document.getElementById('hourlyPay').value ? Number(document.getElementById('hourlyPay').value) : null,
+    location: document.getElementById('location').value.trim(),
+    startDate: startDate || null,
+    endDate: endDate || null,
+    pros: document.getElementById('pros').value.trim(),
+    cons: document.getElementById('cons').value.trim(),
+    dayInLife: document.getElementById('dayInLife').value.trim(),
+    agreedToPolicy: true
+  };
+
+  const submitBtn = document.getElementById('submitReviewBtn');
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = `<span class="btn-spinner"></span>Submitting...`;
+
+  try {
+    const review = await api('/api/reviews', { method: 'POST', body: JSON.stringify(payload) });
+    window.location.href = `company.html?id=${review.companyId}`;
+  } catch (err) {
+    notice.innerHTML = `<div class="notice error">${escapeHtml(err.message)}</div>`;
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = 'Submit review';
+  }
+});
+
+loadCompanies();
+</script>
+</body>
+</html>

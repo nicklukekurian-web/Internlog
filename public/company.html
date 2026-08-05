@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Company · Internlog</title>
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css">
+<meta name="description" content="Honest, anonymous internship reviews by students, for students — pay, difficulty, and what the day-to-day is really like.">
+<meta property="og:title" content="InternLog">
+<meta property="og:description" content="Honest, anonymous internship reviews by students, for students.">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav class="topbar">
+  <a href="index.html" class="brand"><img src="logo-nav.png" alt="" class="brand-logo">Internlog</a>
+  <div class="nav-links">
+    <a href="index.html">Search</a>
+    <a href="submit.html">Write a review</a>
+    <a href="leaderboard.html">Leaderboards</a>
+    <a href="contact.html">Contact us</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div id="content">
+    <div class="skeleton skeleton-line w-40" style="height:26px; margin-bottom:20px;"></div>
+    <div class="skeleton-card" style="margin-bottom:28px;">
+      <div class="skeleton skeleton-line w-60"></div>
+      <div class="skeleton skeleton-line w-40"></div>
+      <div class="skeleton skeleton-line w-80"></div>
+    </div>
+    <div class="skeleton-review-card">
+      <div class="skeleton skeleton-line w-40"></div>
+      <div class="skeleton skeleton-line w-80"></div>
+      <div class="skeleton skeleton-line short"></div>
+    </div>
+    <div class="skeleton-review-card">
+      <div class="skeleton skeleton-line w-40"></div>
+      <div class="skeleton skeleton-line w-80"></div>
+      <div class="skeleton skeleton-line short"></div>
+    </div>
+  </div>
+</main>
+
+<footer>Built by students, for students. Reviews are user-submitted and not verified by Internlog. <a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a></footer>
+
+<script src="app.js"></script>
+<script>
+let allReviews = [];
+let currentReviews = [];
+let currentCompanyId = null;
+let currentSort = 'newest';
+
+const SORT_LABELS = {
+  'newest': 'Newest first',
+  'oldest': 'Oldest first',
+  'rating-desc': 'Highest rating',
+  'rating-asc': 'Lowest rating',
+  'difficulty-desc': 'Hardest to get',
+  'difficulty-asc': 'Easiest to get'
+};
+
+function tierLabel(tier) {
+  return tier === 3 ? 'Tier 3 · Gold — National / international' : tier === 2 ? 'Tier 2 · Silver — State / regional' : 'Tier 1 · Bronze — Local / entry-level';
+}
+
+async function load() {
+  const id = getQueryParam('id');
+  currentCompanyId = id;
+  const content = document.getElementById('content');
+  if (!id) { content.innerHTML = '<p>No company selected.</p>'; return; }
+
+  try {
+    const [company, reviews] = await Promise.all([
+      api(`/api/companies/${id}`),
+      api(`/api/companies/${id}/reviews`)
+    ]);
+    allReviews = reviews;
+
+    content.innerHTML = `
+      <div class="company-header">
+        <div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="medal-icon">${medalIcon(company.tier, 30)}</span>
+            ${company.verified === false ? pendingBadge() : verifiedBadge()}
+          </div>
+          <h1>${escapeHtml(company.name)}</h1>
+          <div>${escapeHtml(company.industry || '')}</div>
+          <div class="stat-block">
+            <div class="stat"><span class="stat-num ${ratingClass(company.stats.avgRating)}">${company.stats.avgRating ?? '—'}</span><span class="stat-label">Avg rating /10</span></div>
+            <div class="stat"><span class="stat-num">${company.stats.avgDifficulty ?? '—'}</span><span class="stat-label">Difficulty to get /10</span></div>
+            <div class="stat"><span class="stat-num">${company.stats.reviewCount}</span><span class="stat-label">Reviews</span></div>
+            <div class="stat"><span class="stat-num" style="font-size:1rem;">${company.stats.mostCommonRole ? escapeHtml(company.stats.mostCommonRole) : '—'}</span><span class="stat-label">Most common role</span></div>
+          </div>
+        </div>
+        <a class="btn" href="submit.html?companyId=${company.id}">Write a review</a>
+      </div>
+
+      <div class="role-filter-row" style="justify-content:space-between; max-width:none;">
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="roleFilter" placeholder="Filter reviews by role...">
+          <button id="roleFilterBtn" class="btn-secondary">Filter</button>
+        </div>
+        <div class="sort-control" id="sortControl">
+          <button id="sortToggle" class="btn-neon" type="button">
+            Sort: ${SORT_LABELS[currentSort]}
+            <span class="neon-chevron">▾</span>
+          </button>
+          <div class="sort-menu" id="sortMenu" hidden>
+            ${Object.entries(SORT_LABELS).map(([key, label]) => `
+              <button class="sort-option${key === currentSort ? ' active' : ''}" data-sort="${key}">${label}</button>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <h2 id="reviewsHeading">Reviews (${reviews.length})</h2>
+      <div id="reviewsList"></div>
+    `;
+
+    currentReviews = allReviews;
+    renderSortedReviews();
+
+    document.getElementById('roleFilterBtn').addEventListener('click', filterByRole);
+    document.getElementById('roleFilter').addEventListener('keydown', e => { if (e.key === 'Enter') filterByRole(); });
+    setupSortControl();
+  } catch (e) {
+    content.innerHTML = `<p>Couldn't load this company. ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+function setupSortControl() {
+  const toggle = document.getElementById('sortToggle');
+  const menu = document.getElementById('sortMenu');
+
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.hidden = !menu.hidden;
+  });
+
+  menu.querySelectorAll('.sort-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentSort = btn.dataset.sort;
+      toggle.innerHTML = `Sort: ${SORT_LABELS[currentSort]} <span class="neon-chevron">▾</span>`;
+      menu.querySelectorAll('.sort-option').forEach(b => b.classList.toggle('active', b === btn));
+      menu.hidden = true;
+      renderSortedReviews();
+    });
+  });
+
+  document.addEventListener('click', () => { menu.hidden = true; });
+}
+
+async function filterByRole() {
+  const role = document.getElementById('roleFilter').value.trim();
+  const reviews = await api(`/api/companies/${currentCompanyId}/reviews${role ? '?role=' + encodeURIComponent(role) : ''}`);
+  document.getElementById('reviewsHeading').textContent = `Reviews (${reviews.length})`;
+  currentReviews = reviews;
+  renderSortedReviews();
+}
+
+function getSortedReviews(reviews) {
+  const arr = [...reviews];
+  switch (currentSort) {
+    case 'newest': arr.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); break;
+    case 'oldest': arr.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); break;
+    case 'rating-desc': arr.sort((a, b) => b.rating - a.rating); break;
+    case 'rating-asc': arr.sort((a, b) => a.rating - b.rating); break;
+    case 'difficulty-desc': arr.sort((a, b) => (b.difficultyToGet ?? -1) - (a.difficultyToGet ?? -1)); break;
+    case 'difficulty-asc': arr.sort((a, b) => (a.difficultyToGet ?? 11) - (b.difficultyToGet ?? 11)); break;
+  }
+  return arr;
+}
+
+function renderSortedReviews() {
+  renderReviews(getSortedReviews(currentReviews));
+}
+
+function renderReviews(reviews) {
+  const list = document.getElementById('reviewsList');
+  list.innerHTML = '';
+
+  if (!reviews.length) {
+    list.innerHTML = `<div class="empty-state">No reviews match yet — be the first to <a href="submit.html?companyId=${currentCompanyId}">share yours</a>.</div>`;
+    return;
+  }
+
+  reviews.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'review-card';
+    div.innerHTML = `
+      <div class="review-top">
+        <div class="review-role">${escapeHtml(r.role)}</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="review-score ${ratingClass(r.rating)}">${r.rating}/10</div>
+          <button class="btn-secondary report-review-btn" data-id="${r.id}">Report</button>
+        </div>
+      </div>
+      <div class="review-sub">
+        ${r.difficultyToGet ? `<span>Difficulty to get position: <strong>${r.difficultyToGet}/10</strong></span>` : ''}
+        ${r.hourlyPay ? `<span>Hourly pay: <strong>$${r.hourlyPay}/hr</strong></span>` : `<span>Hourly pay: not disclosed</span>`}
+        ${r.location ? `<span>📍 ${escapeHtml(r.location)}</span>` : ''}
+        ${formatDateRange(r.startDate, r.endDate)}
+        <span>Posted ${new Date(r.createdAt).toLocaleDateString()}</span>
+      </div>
+      <div class="review-cols">
+        <div><h4>Pros</h4><p>${escapeHtml(r.pros) || '—'}</p></div>
+        <div><h4>Cons</h4><p>${escapeHtml(r.cons) || '—'}</p></div>
+      </div>
+      ${r.dayInLife ? `<div class="day-in-life"><strong>A day in the life:</strong> ${escapeHtml(r.dayInLife)}</div>` : ''}
+    `;
+    list.appendChild(div);
+  });
+
+  document.querySelectorAll('.report-review-btn').forEach(btn => {
+    btn.addEventListener('click', () => openReportModal(btn.dataset.id));
+  });
+}
+
+function openReportModal(reviewId) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'report-modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="report-modal">
+      <h3>Report this review</h3>
+      <p>Flag content that's inappropriate, fake, or not relevant. Our team reviews every report by hand, usually within a few business days.</p>
+      <select id="reportReason">
+        <option value="Inappropriate content">Inappropriate content</option>
+        <option value="Suspected fake or misleading review">Suspected fake or misleading review</option>
+        <option value="Contains personal or confidential information">Contains personal or confidential information</option>
+        <option value="Not relevant to this company">Not relevant to this company</option>
+        <option value="Other">Other</option>
+      </select>
+      <textarea id="reportDetails" placeholder="Optional — add any details that would help us review this faster."></textarea>
+      <div id="reportNotice"></div>
+      <div class="report-modal-actions">
+        <button type="button" class="btn-secondary" id="reportCancelBtn">Cancel</button>
+        <button type="button" id="reportSubmitBtn">Submit report</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+
+  const close = () => backdrop.remove();
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+  backdrop.querySelector('#reportCancelBtn').addEventListener('click', close);
+
+  backdrop.querySelector('#reportSubmitBtn').addEventListener('click', async () => {
+    const reason = backdrop.querySelector('#reportReason').value;
+    const details = backdrop.querySelector('#reportDetails').value.trim();
+    const notice = backdrop.querySelector('#reportNotice');
+    const submitBtn = backdrop.querySelector('#reportSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="btn-spinner"></span>Submitting...`;
+    try {
+      await api(`/api/reviews/${reviewId}/report`, { method: 'POST', body: JSON.stringify({ reason, details }) });
+      backdrop.querySelector('.report-modal').innerHTML = `
+        <h3>Report submitted</h3>
+        <p>Thanks — our team will take a look. This review stays up while we review it unless it clearly violates our policies.</p>
+        <div class="report-modal-actions">
+          <button type="button" id="reportDoneBtn">Close</button>
+        </div>
+      `;
+      backdrop.querySelector('#reportDoneBtn').addEventListener('click', close);
+    } catch (e) {
+      notice.innerHTML = `<div class="notice error">${escapeHtml(e.message)}</div>`;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit report';
+    }
+  });
+}
+
+load();
+</script>
+</body>
+</html>

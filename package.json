@@ -1,0 +1,15 @@
+{
+  "name": "internlog",
+  "version": "1.0.0",
+  "description": "Internlog - a site for reviewing internships, tiered by company level",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "nodemailer": "^9.0.3"
+  }
+}
