@@ -64,7 +64,17 @@ async function sendEmail(subject, text) {
 }
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Redirect any old "/page.html" URL to the clean "/page" version (301 = permanent).
+app.get(/\.html$/, (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  const clean = req.path.replace(/\.html$/, '');
+  const qs = req.url.slice(req.path.length); // preserve ?id=... query strings
+  res.redirect(301, clean + qs);
+});
+
+// Serve static files; extensions:['html'] lets "/submit" resolve to "submit.html".
+app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 
 // ---------- rate limiting ----------
 const generalLimiter = rateLimit({
