@@ -187,7 +187,25 @@ function renderReviews(reviews) {
   list.innerHTML = '';
 
   if (!reviews.length) {
-    list.innerHTML = `<div class="empty-state">No reviews match yet — be the first to <a href="submit.html?companyId=${currentCompanyId}">share yours</a>.</div>`;
+    const empty = document.createElement('div');
+
+empty.className = 'empty-state';
+
+empty.appendChild(document.createTextNode('No reviews match yet — be the first to '));
+
+const link = document.createElement('a');
+
+link.href = `submit.html?companyId=${encodeURIComponent(currentCompanyId ?? '')}`;
+
+link.textContent = 'share yours';
+
+empty.appendChild(link);
+
+empty.appendChild(document.createTextNode('.'));
+
+list.appendChild(empty);
+
+return;
     return;
   }
 
