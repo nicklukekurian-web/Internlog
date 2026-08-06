@@ -31,6 +31,17 @@ A community-driven internship transparency platform helping students make smarte
 
 </p>
 
+<p align="center">
+  <a href="https://your-live-url.com">
+    <img src="https://img.shields.io/badge/🌐_Live_Demo-Visit_Internlog-2ea44f?style=for-the-badge" alt="Live Demo">
+  </a>
+  <a href="https://github.com/nicklukekurian-web/Internlog">
+    <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github" alt="GitHub Repository">
+  </a>
+</p>
+
+**🌐 Live Demo:** https://internlog-onrender-com.onrender.com/
+
 
 # 📌 About Internlog
 
