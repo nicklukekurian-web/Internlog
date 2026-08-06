@@ -7,13 +7,6 @@
 <link rel="icon" type="image/png" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="style.css">
-<meta name="description" content="Honest, anonymous internship reviews by students, for students — pay, difficulty, and what the day-to-day is really like.">
-<meta property="og:title" content="InternLog">
-<meta property="og:description" content="Honest, anonymous internship reviews by students, for students.">
-<meta property="og:image" content="/og-image.png">
-<meta property="og:type" content="website">
-<meta name="twitter:card" content="summary_large_image">
 </head>
 <body>
 
@@ -187,25 +180,7 @@ function renderReviews(reviews) {
   list.innerHTML = '';
 
   if (!reviews.length) {
-    const empty = document.createElement('div');
-
-empty.className = 'empty-state';
-
-empty.appendChild(document.createTextNode('No reviews match yet — be the first to '));
-
-const link = document.createElement('a');
-
-link.href = `submit.html?companyId=${encodeURIComponent(currentCompanyId ?? '')}`;
-
-link.textContent = 'share yours';
-
-empty.appendChild(link);
-
-empty.appendChild(document.createTextNode('.'));
-
-list.appendChild(empty);
-
-return;
+    list.innerHTML = `<div class="empty-state">No reviews match yet — be the first to <a href="submit.html?companyId=${currentCompanyId}">share yours</a>.</div>`;
     return;
   }
 
