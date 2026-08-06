@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const nodemailer = require('nodemailer');
 const rateLimit = require('express-rate-limit');
 const db = require('./db');
 
@@ -19,28 +18,46 @@ if (ADMIN_KEY === 'change-me-before-launch') {
   console.warn('WARNING: ADMIN_KEY is still the placeholder value. Set a real ADMIN_KEY environment variable before launch.');
 }
 
-// Business email that gets notified for every new review AND every report.
-const BUSINESS_EMAIL = 'internlogged@gmail.com';
-const EMAIL_USER = process.env.EMAIL_USER || BUSINESS_EMAIL;
-const EMAIL_PASS = process.env.EMAIL_PASS || '';
+if (!process.env.DATABASE_URL) {
+  console.warn('WARNING: DATABASE_URL is not set. The server will crash on any database query until it is configured.');
+}
 
-let transporter = null;
-if (EMAIL_PASS) {
-  transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: EMAIL_USER, pass: EMAIL_PASS }
-  });
-} else {
-  console.warn('EMAIL_PASS not set — review/report emails will be logged to the console instead of sent.');
+// Business email that gets notified for every new review AND every report.
+// Sending is done through Brevo's HTTPS API (port 443) instead of Gmail SMTP,
+// because hosts like Render's free tier block outbound SMTP ports (25/465/587).
+const BUSINESS_EMAIL = 'internlogged@gmail.com';
+// The verified sender address in your Brevo account (defaults to the business email).
+const EMAIL_SENDER = process.env.EMAIL_SENDER || BUSINESS_EMAIL;
+const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
+
+if (!BREVO_API_KEY) {
+  console.warn('BREVO_API_KEY not set — review/report emails will be logged to the console instead of sent.');
 }
 
 async function sendEmail(subject, text) {
-  if (!transporter) {
+  if (!BREVO_API_KEY) {
     console.log(`[EMAIL NOT CONFIGURED] Would have sent: "${subject}"\n${text}\n`);
     return;
   }
   try {
-    await transporter.sendMail({ from: EMAIL_USER, to: BUSINESS_EMAIL, subject, text });
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': BREVO_API_KEY,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { email: EMAIL_SENDER, name: 'Internlog' },
+        to: [{ email: BUSINESS_EMAIL }],
+        subject,
+        textContent: text
+      })
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      console.error(`Failed to send email: Brevo returned ${res.status} ${detail}`);
+    }
   } catch (err) {
     console.error('Failed to send email:', err.message);
   }
@@ -80,7 +97,6 @@ function wordCount(str) {
 }
 
 // ---------- shape mappers: DB (snake_case) -> API (camelCase) ----------
-// keeps the existing frontend completely unchanged
 
 function toApiCompany(row, stats) {
   return {
@@ -111,7 +127,6 @@ function toApiReview(row) {
   };
 }
 
-// wraps every async route so a thrown error becomes a clean 500 instead of crashing the server
 function asyncRoute(fn) {
   return (req, res) => fn(req, res).catch(err => {
     console.error(err);
@@ -217,7 +232,7 @@ app.post('/api/reviews', writeLimiter, asyncRoute(async (req, res) => {
     `Dates: ${startDate || '?'} to ${endDate || '?'}\n\n` +
     `Pros: ${pros}\n\nCons: ${cons}\n\nDay in the life: ${dayInLife}\n\n` +
     `Review ID: ${newReview.id}\n` +
-    `To remove this review: curl -X DELETE http://localhost:3000/api/reviews/${newReview.id} -H "Content-Type: application/json" -d '{"adminKey":"YOUR_ADMIN_KEY"}'`
+    `To remove this review: curl -X DELETE https://internlog-onrender-com.onrender.com/api/reviews/${newReview.id} -H "Content-Type: application/json" -d '{"adminKey":"YOUR_ADMIN_KEY"}'`
   );
 
   res.status(201).json({ ...toApiReview(newReview), company: toApiCompany(company) });
@@ -257,7 +272,7 @@ app.post('/api/reviews/:id/report', writeLimiter, asyncRoute(async (req, res) =>
     `Role: ${review.role}\nRating: ${review.rating}/10\n` +
     `Pros: ${review.pros}\nCons: ${review.cons}\nDay in the life: ${review.day_in_life}\n\n` +
     `Review ID: ${review.id}\n` +
-    `To remove this review: curl -X DELETE http://localhost:3000/api/reviews/${review.id} -H "Content-Type: application/json" -d '{"adminKey":"YOUR_ADMIN_KEY"}'`
+    `To remove this review: curl -X DELETE https://internlog-onrender-com.onrender.com/api/reviews/${review.id} -H "Content-Type: application/json" -d '{"adminKey":"YOUR_ADMIN_KEY"}'`
   );
 
   res.status(201).json({ success: true, ticketId: ticket.id });
