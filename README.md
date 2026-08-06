@@ -334,90 +334,6 @@ Focus:
 
 ---
 
-# 📁 Project Structure
-
-
-```
-Internlog
-
-├── .github/
-│   ├── workflows/
-│   ├── ISSUE_TEMPLATE/
-│   └── SECURITY.md
-
-├── public/
-│   ├── laptop.png
-│   ├── og-image.png
-│   ├── logo-nav.png
-│   ├── logo-source.png
-│   ├── favicon.ico
-│   ├── apple-touch-icon.png
-│   ├── favicon-16.png
-│   └── favicon-32.png
-
-
-├── data/
-
-├── server.js
-
-├── package.json
-
-├── README.md
-
-└── LICENSE
-```
-
-
----
-
-# 🚀 Running Locally
-
-
-Clone repository:
-
-```bash
-git clone https://github.com/nicklukekurian-web/Internlog.git
-
-cd Internlog
-```
-
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-
-Configure environment variables:
-
-
-```bash
-EMAIL_USER="your_email"
-EMAIL_PASS="your_password"
-ADMIN_KEY="your_secret_key"
-```
-
-
-Start application:
-
-```bash
-npm start
-```
-
-
-Open:
-
-```
-http://localhost:3000
-```
-
-
----
-
-# 🗺 Roadmap
-
-
 ## Version 1 ✅
 
 Completed:
@@ -431,32 +347,6 @@ Completed:
 - GitHub Actions
 - Security documentation
 
-
----
-
-## Version 2 🚧
-
-Planned:
-
-- PostgreSQL database migration
-- Company statistics
-- Improved filtering
-- Better ranking system
-- User saved searches
-
-
----
-
-## Future Vision 🚀
-
-Future improvements:
-
-- AI internship summaries
-- Internship trend analytics
-- Personalized recommendations
-- Mobile application
-
-
 ---
 
 # 📜 Legal & Documentation
@@ -465,8 +355,6 @@ Internlog includes:
 
 - Privacy Policy
 - Terms of Service
-- Review Policy
-- Moderation Policy
 - Security Policy
 
 
