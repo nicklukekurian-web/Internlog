@@ -965,3 +965,108 @@ footer a:hover { color: var(--text); }
   .footer-inner { flex-direction: column; gap: 24px; }
   .site-footer { text-align: left; padding: 36px 20px 28px; }
 }
+/* ============================================================
+   MOBILE PASS — hamburger nav + responsive layout
+   ============================================================ */
+
+/* hamburger button: hidden on desktop, shown on mobile */
+.nav-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  z-index: 60;
+}
+.nav-toggle span {
+  display: block;
+  width: 26px;
+  height: 2px;
+  background: var(--text);
+  margin: 6px 0;
+  border-radius: 2px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+/* animate into an X when open */
+.nav-toggle.active span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+.nav-toggle.active span:nth-child(2) { opacity: 0; }
+.nav-toggle.active span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+@media (max-width: 768px) {
+  .nav-toggle { display: block; }
+
+  /* nav bar: brand on left, hamburger on right, tighter padding */
+  .topbar { padding: 12px 18px; }
+
+  /* nav links become a dropdown panel below the bar */
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: rgba(10, 15, 30, 0.98);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 6px 0;
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 1rem;
+  }
+
+  /* hero: scale the giant headline down so it fits and clears the fixed nav */
+  .hero-dark { padding-top: 84px; padding-bottom: 40px; }
+  .hero-dark-content { padding-left: 20px; padding-right: 20px; }
+  .hero-dark h1 { font-size: clamp(2.1rem, 10vw, 3rem); line-height: 1.08; }
+  .hero-dark p { font-size: 1rem; }
+
+  /* hero buttons + search: stack full width */
+  .hero-actions { flex-direction: column; align-items: stretch; gap: 12px; }
+  .hero-actions .btn-gold-solid,
+  .hero-actions .btn-glass { width: 100%; text-align: center; }
+
+  .hero-dark-search { flex-direction: column; align-items: stretch; gap: 12px; }
+  .glow-search-wrap { width: 100%; min-width: 0; }
+  .hero-dark-search input[type="text"],
+  .hero-dark-search #roleInput,
+  .hero-dark-search #searchBtn { width: 100%; }
+
+  /* tier tabs: wrap neatly, comfortable tap size */
+  .tier-tabs { gap: 8px; }
+  .tier-tab { font-size: 0.85rem; padding: 10px 14px; }
+
+  /* company grid: single column */
+  .company-grid { grid-template-columns: 1fr; }
+
+  /* company page header: stack the title block and the write-review button */
+  .company-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .company-header .btn { width: 100%; text-align: center; }
+
+  /* pros/cons: stack instead of side by side */
+  .review-cols { grid-template-columns: 1fr; }
+
+  /* stat blocks wrap comfortably */
+  .stat-block { flex-wrap: wrap; gap: 16px; }
+
+  /* two-up form fields (e.g. start/end date) stack */
+  .field-row { flex-direction: column; gap: 0; }
+
+  /* page side padding a touch tighter */
+  .page { padding-left: 18px; padding-right: 18px; }
+
+  /* sort menu: keep it from overflowing off-screen */
+  .sort-menu { right: 0; left: auto; }
+}
+
+/* very small phones */
+@media (max-width: 380px) {
+  .hero-dark h1 { font-size: 2rem; }
+  .review-mini-card { width: 240px; }
+}

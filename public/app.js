@@ -99,3 +99,34 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   `;
 });
+// mobile hamburger nav — injected into every page's .topbar so no HTML file
+// needs editing (same approach as the footer). Shows only on narrow screens via CSS.
+document.addEventListener('DOMContentLoaded', () => {
+  const topbar = document.querySelector('.topbar');
+  const navLinks = document.querySelector('.nav-links');
+  if (!topbar || !navLinks) return;
+
+  const toggle = document.createElement('button');
+  toggle.className = 'nav-toggle';
+  toggle.setAttribute('aria-label', 'Toggle menu');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.innerHTML = '<span></span><span></span><span></span>';
+  topbar.appendChild(toggle);
+
+  const closeMenu = () => {
+    navLinks.classList.remove('open');
+    toggle.classList.remove('active');
+    toggle.setAttribute('aria-expanded', 'false');
+  };
+
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = navLinks.classList.toggle('open');
+    toggle.classList.toggle('active', open);
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
+  // close when a link is tapped, or when tapping outside the nav
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
+  document.addEventListener('click', (e) => { if (!topbar.contains(e.target)) closeMenu(); });
+});
