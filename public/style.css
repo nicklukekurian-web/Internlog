@@ -1070,3 +1070,18 @@ footer a:hover { color: var(--text); }
   .hero-dark h1 { font-size: 2rem; }
   .review-mini-card { width: 240px; }
 }
+/* internships-only notice on the submit form */
+.scope-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: rgba(227, 178, 60, 0.08);
+  border: 1.5px solid rgba(227, 178, 60, 0.35);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  max-width: 560px;
+  margin: 16px 0 24px;
+}
+.scope-notice .scope-icon { font-size: 1.1rem; line-height: 1.4; }
+.scope-notice p { margin: 0; font-size: 0.9rem; color: var(--text); line-height: 1.5; }
+.scope-notice strong { color: var(--gold); }
