@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <p>Honest, anonymous internship reviews by students, for students.</p>
       </div>
       <div class="footer-links">
-        <a href="index.html">Browse</a>
+        <a href="/">Browse</a>
         <a href="submit.html">Write a review</a>
         <a href="leaderboard.html">Leaderboards</a>
         <a href="contact.html">Contact us</a>
