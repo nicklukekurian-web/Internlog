@@ -178,10 +178,25 @@ async function createContactSubmission({ companyName, contactName, email, messag
   );
   return rows[0];
 }
+async function getReviewsByCompany(companyId) {
+  const { rows } = await pool.query(
+    'SELECT * FROM reviews WHERE company_id = $1',
+    [companyId]
+  );
+  return rows;
+}
+
+async function setReviewSpamScore(reviewId, spamScore, spamLevel, spamReasons) {
+  await pool.query(
+    'UPDATE reviews SET spam_score = $1, spam_level = $2, spam_reasons = $3 WHERE id = $4',
+    [spamScore, spamLevel, JSON.stringify(spamReasons), reviewId]
+  );
+}
 
 module.exports = {
   pool,
   getCompanies, getCompanyById, createCompany, updateCompany, findOrCreateCompany,
   companyStats, getReviewsForCompany, getReviewById, createReview, deleteReview,
-  getRecentReviews, createReport, getLeaderboard, createContactSubmission
+  getRecentReviews, createReport, getLeaderboard, createContactSubmission,
+  getReviewsByCompany, setReviewSpamScore
 };
