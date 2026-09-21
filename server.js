@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const db = require('./db');
+const { scoreReview } = require('./spamScorer');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -231,10 +232,26 @@ app.post('/api/reviews', writeLimiter, asyncRoute(async (req, res) => {
     pros, cons, dayInLife
   });
 
+  // ---- Stage 1 spam/quality scoring ----
+  const existingRows = await db.getReviewsForCompany(company.id);
+  const existingForScoring = existingRows.map(r => ({
+    id: r.id, pros: r.pros, cons: r.cons, dayInLife: r.day_in_life
+  }));
+  const { spamScore, level, reasons } = scoreReview(
+    { id: newReview.id, rating: ratingNum, pros, cons, dayInLife },
+    existingForScoring
+  );
+  await db.setReviewSpamScore(newReview.id, spamScore, level, reasons);
+
+  const spamLine = level !== 'low'
+    ? `\n⚠️ Quality flag: ${level.toUpperCase()} (score ${spamScore}/100)\nReasons: ${reasons.join('; ')}\n`
+    : '';
+
   sendEmail(
     `New Internlog review — ${company.name}`,
-    `A new review was just posted.\n\n` +
-    `Company: ${company.name} (${company.id})\n` +
+    `A new review was just posted.\n` +
+    spamLine +
+    `\nCompany: ${company.name} (${company.id})\n` +
     `Role: ${role}\nRating: ${ratingNum}/10\n` +
     `Difficulty to get: ${difficultyToGet || 'not given'}\n` +
     `Hourly pay: ${hourlyPay || 'not disclosed'}\n` +
