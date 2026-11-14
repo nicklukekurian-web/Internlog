@@ -205,6 +205,33 @@ Internlog includes automated moderation support:
 
 ---
 
+### 🧠 Content Quality & Fraud Detection
+
+Internlog includes a rule-based scoring system that flags likely low-quality or fake reviews for moderator attention before they're published.
+
+Every submission is scored across multiple engineered signals:
+
+- **Lexical analysis** — review length and vocabulary diversity (type-token ratio), to catch low-effort or filler submissions
+- **Near-duplicate detection** — word n-gram shingling with Jaccard similarity, comparing each new review against existing reviews for the same company to catch copy-pasted or lightly-edited duplicates
+- **Rating-extremity detection** — flags extreme ratings (1 or 10) paired with thin review text, a common pattern in fake or retaliatory reviews
+- **Generic/templated language detection** — pattern matching against common low-effort phrasing ("very good," "n/a," etc.), weighted by how much of the review they make up
+- **Promotional link detection** — flags spam links and commonly-abused domains in review text
+
+Each review gets a 0–100 quality score, a risk level (low/medium/high), and a list of the specific reasons behind the score — all of which are appended directly to the existing email-based moderation workflow, so a human moderator sees exactly why a review was flagged, with full context, before deciding anything.
+
+**Design principles:**
+
+- **Never auto-rejects.** The system flags and explains; a human always makes the final call. This keeps a legitimate but unusually-phrased review from being silently blocked.
+- **Transparent by design.** Every score is explainable — no black-box model, no opaque probability. Every flag traces back to a specific, human-readable reason.
+- **Built for the data that exists.** With too few real reviews to train a classifier that would generalize, this stage uses interpretable heuristics instead of a model — and doubles as instrumentation: moderator accept/reject decisions on flagged reviews are captured as labeled data for a future trained classifier, once real usage generates enough volume to train one responsibly.
+- **Zero marginal infrastructure cost.** Runs in-process inside the existing Express API — no separate service, no new dependencies, no additional hosting cost.
+
+**Known limitation:** because the rule set is fixed and inspectable, a motivated bad actor could eventually learn to write around individual checks (e.g., paraphrasing to dodge the n-gram overlap threshold, or padding thin text to avoid the length signal). This is a known tradeoff of rule-based systems — rules are easier to evade once they're known — and it's the concrete reason a learned model, trained on the moderator-labeled data this stage is now collecting, is the intended next stage rather than the end state.
+
+This was built as a deliberate first stage of an applied fraud-detection pipeline: a transparent, production-safe heuristic system now, generating the real labeled dataset a trained classifier will need, with that classifier as the natural next step once there's enough volume to train one responsibly.
+
+---
+
 # 🏗️ Technical Architecture
 
 Current architecture:
@@ -227,9 +254,7 @@ Backend
 
 Data Layer
 │
-├── JSON Storage (Current)
-└── PostgreSQL Migration Planned
-
+└── PostgreSQL (Supabase)
 
 Security
 │
@@ -266,15 +291,7 @@ Security
 
 ## Database
 
-Current:
-
-- JSON based storage
-
-
-Future:
-
-- PostgreSQL
-- Scalable cloud database architecture
+- PostgreSQL (Supabase)
 
 
 ---
