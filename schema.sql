@@ -47,3 +47,15 @@ CREATE TABLE IF NOT EXISTS contact_submissions (
 
 CREATE INDEX IF NOT EXISTS idx_reviews_company_id ON reviews(company_id);
 CREATE INDEX IF NOT EXISTS idx_reports_review_id  ON reports(review_id);
+
+-- Fraud/quality scoring (written by the server on each new review; flag-only, never auto-rejects)
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS spam_score   INTEGER;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS spam_level   TEXT;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS spam_reasons TEXT;
+
+-- Row Level Security: enabled with no policies, so the public anon/authenticated API roles
+-- can read and write nothing. The Express server connects as a privileged role and bypasses RLS.
+ALTER TABLE companies           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reviews             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reports             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contact_submissions ENABLE ROW LEVEL SECURITY;

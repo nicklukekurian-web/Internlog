@@ -32,7 +32,7 @@ A community-driven internship transparency platform helping students make smarte
 </p>
 
 <p align="center">
-  <a href="https://your-live-url.com">
+  <a href="https://internlog-onrender-com.onrender.com/">
     <img src="https://img.shields.io/badge/🌐_Live_Demo-Visit_Internlog-2ea44f?style=for-the-badge" alt="Live Demo">
   </a>
   <a href="https://github.com/nicklukekurian-web/Internlog">
@@ -164,11 +164,14 @@ Security was a major focus during development.
 Implemented security practices include:
 
 ✅ HTTPS support  
-✅ Input validation  
-✅ Rate limiting  
+✅ Input validation and parameterized SQL queries  
+✅ Tiered rate limiting (general, write and admin tiers, keyed on client IP behind the proxy)  
+✅ Admin-only moderation endpoints (constant-time key comparison, 401 on failure)  
+✅ Output escaping against stored XSS, including quoted HTML attributes  
+✅ Row Level Security enabled on all tables (server connects with a privileged role, so RLS acts as defense in depth against direct API access)  
 ✅ Environment variable protection  
-✅ Secure backend architecture  
-✅ OWASP vulnerability awareness  
+✅ Dependency scanning (Dependabot, `npm audit`) and CodeQL static analysis  
+✅ Automated tests run on every push via GitHub Actions  
 ✅ Responsible vulnerability disclosure  
 ✅ Moderation workflow  
 
@@ -207,7 +210,7 @@ Internlog includes automated moderation support:
 
 ### 🧠 Content Quality & Fraud Detection
 
-Internlog includes a rule-based scoring system that flags likely low-quality or fake reviews for moderator attention before they're published.
+Internlog includes a rule-based scoring system that flags likely low-quality or fake reviews for moderator attention. It is a set of hand-written heuristics, not a trained machine-learning model.
 
 Every submission is scored across multiple engineered signals:
 
@@ -223,12 +226,12 @@ Each review gets a 0–100 quality score, a risk level (low/medium/high), and a 
 
 - **Never auto-rejects.** The system flags and explains; a human always makes the final call. This keeps a legitimate but unusually-phrased review from being silently blocked.
 - **Transparent by design.** Every score is explainable — no black-box model, no opaque probability. Every flag traces back to a specific, human-readable reason.
-- **Built for the data that exists.** With too few real reviews to train a classifier that would generalize, this stage uses interpretable heuristics instead of a model — and doubles as instrumentation: moderator accept/reject decisions on flagged reviews are captured as labeled data for a future trained classifier, once real usage generates enough volume to train one responsibly.
+- **Built for the data that exists.** With too few real reviews to train a classifier that would generalize, this stage uses interpretable heuristics instead of a model. Each review's score, level and reasons are stored alongside it, but moderator decisions are not yet recorded as labels (removing a review deletes its row). Capturing those decisions, for example with a status column instead of a hard delete, is the prerequisite for training a classifier later.
 - **Zero marginal infrastructure cost.** Runs in-process inside the existing Express API — no separate service, no new dependencies, no additional hosting cost.
 
-**Known limitation:** because the rule set is fixed and inspectable, a motivated bad actor could eventually learn to write around individual checks (e.g., paraphrasing to dodge the n-gram overlap threshold, or padding thin text to avoid the length signal). This is a known tradeoff of rule-based systems — rules are easier to evade once they're known — and it's the concrete reason a learned model, trained on the moderator-labeled data this stage is now collecting, is the intended next stage rather than the end state.
+**Known limitation:** because the rule set is fixed and inspectable, a motivated bad actor could eventually learn to write around individual checks (e.g., paraphrasing to dodge the n-gram overlap threshold, or padding thin text to avoid the length signal). This is a known tradeoff of rule-based systems — rules are easier to evade once they're known — and it's the concrete reason a learned model is the intended next stage rather than the end state. That stage depends on first recording moderator decisions as labeled data.
 
-This was built as a deliberate first stage of an applied fraud-detection pipeline: a transparent, production-safe heuristic system now, generating the real labeled dataset a trained classifier will need, with that classifier as the natural next step once there's enough volume to train one responsibly.
+This is the first stage of a fraud-detection pipeline: a transparent, production-safe heuristic system now, with a trained classifier as a possible later step once there is enough labeled data to justify one. The scorer is covered by automated tests (flagged and not-flagged cases, including a regression test for a false positive found during testing).
 
 ---
 
@@ -258,8 +261,10 @@ Data Layer
 
 Security
 │
-├── Rate Limiting
+├── Tiered Rate Limiting
+├── Admin-key Middleware
 ├── Input Validation
+├── Rule-based Review Scoring
 └── Environment Variables
 ```
 
@@ -285,8 +290,9 @@ Security
 
 - Git
 - GitHub
-- GitHub Actions
-- Nodemailer
+- GitHub Actions (CodeQL and automated tests)
+- Brevo transactional email API
+- Node's built-in test runner, supertest and jsdom
 
 
 ## Database
