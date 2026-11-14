@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+const crypto = require('crypto');
 const db = require('./db');
 const { scoreReview } = require('./spamScorer');
 
@@ -17,6 +18,23 @@ const WORD_LIMIT = 250;
 const ADMIN_KEY = process.env.ADMIN_KEY || 'change-me-before-launch';
 if (ADMIN_KEY === 'change-me-before-launch') {
   console.warn('WARNING: ADMIN_KEY is still the placeholder value. Set a real ADMIN_KEY environment variable before launch.');
+}
+
+// Compare secrets without leaking how many leading characters matched (hashing gives equal-length buffers).
+function safeEqual(a, b) {
+  const ha = crypto.createHash('sha256').update(String(a)).digest();
+  const hb = crypto.createHash('sha256').update(String(b)).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
+
+// Gate for every admin-only route. The key may be sent as an "x-admin-key" header or as
+// "adminKey" in the JSON body (the body form is what the moderation emails' curl commands use).
+function requireAdmin(req, res, next) {
+  const supplied = req.get('x-admin-key') || (req.body && req.body.adminKey);
+  if (!supplied || !safeEqual(supplied, ADMIN_KEY)) {
+    return res.status(401).json({ error: 'A valid admin key is required.' });
+  }
+  next();
 }
 
 if (!process.env.DATABASE_URL) {
@@ -149,9 +167,10 @@ function asyncRoute(fn) {
 
 app.get('/api/companies', asyncRoute(async (req, res) => {
   const { search, tier, role } = req.query;
-  const companies = await db.getCompanies({ search, tier, role });
-  const withStats = await Promise.all(companies.map(async c => toApiCompany(c, await db.companyStats(c.id))));
-  res.json(withStats);
+  // One aggregated query instead of 2 queries per company, so the number of companies
+  // can't exhaust the database connection pool.
+  const rows = await db.getCompaniesWithStats({ search, tier, role });
+  res.json(rows.map(({ company, stats }) => toApiCompany(company, stats)));
 }));
 
 app.get('/api/companies/:id', asyncRoute(async (req, res) => {
@@ -161,7 +180,7 @@ app.get('/api/companies/:id', asyncRoute(async (req, res) => {
   res.json(toApiCompany(company, stats));
 }));
 
-app.post('/api/companies', writeLimiter, asyncRoute(async (req, res) => {
+app.post('/api/companies', writeLimiter, requireAdmin, asyncRoute(async (req, res) => {
   const { name, tier, industry, verified } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
   if (tier !== undefined && tier !== null && ![1, 2, 3].includes(Number(tier))) {
@@ -171,7 +190,7 @@ app.post('/api/companies', writeLimiter, asyncRoute(async (req, res) => {
   res.status(201).json(toApiCompany(company));
 }));
 
-app.patch('/api/companies/:id', adminLimiter, asyncRoute(async (req, res) => {
+app.patch('/api/companies/:id', adminLimiter, requireAdmin, asyncRoute(async (req, res) => {
   const { tier, verified, industry } = req.body;
   if (tier !== undefined && tier !== null && ![1, 2, 3].includes(Number(tier))) {
     return res.status(400).json({ error: 'tier must be 1, 2, 3, or null' });
@@ -265,11 +284,7 @@ app.post('/api/reviews', writeLimiter, asyncRoute(async (req, res) => {
   res.status(201).json({ ...toApiReview(newReview), company: toApiCompany(company) });
 }));
 
-app.delete('/api/reviews/:id', adminLimiter, asyncRoute(async (req, res) => {
-  const { adminKey } = req.body || {};
-  if (!adminKey || adminKey !== ADMIN_KEY) {
-    return res.status(403).json({ error: 'Incorrect admin key.' });
-  }
+app.delete('/api/reviews/:id', adminLimiter, requireAdmin, asyncRoute(async (req, res) => {
   const removed = await db.deleteReview(req.params.id);
   if (!removed) return res.status(404).json({ error: 'Review not found' });
   res.json({ success: true, removed: toApiReview(removed) });
@@ -333,6 +348,11 @@ app.post('/api/contact', writeLimiter, asyncRoute(async (req, res) => {
   res.status(201).json({ success: true });
 }));
 
-app.listen(PORT, () => {
-  console.log(`Internlog server running at http://localhost:${PORT}`);
-});
+// Only start listening when run directly (node server.js), so tests can import the app.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Internlog server running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

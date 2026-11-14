@@ -3,7 +3,9 @@ async function api(path, options = {}) {
   if (!res.ok) { const err = await res.json().catch(() => ({ error: 'Something went wrong' })); throw new Error(err.error || 'Request failed'); }
   return res.json();
 }
-function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str ?? ''; return div.innerHTML; }
+// Serializing through a <div> escapes &, < and > but NOT quotes, so quotes are escaped explicitly:
+// several pages interpolate this inside quoted attributes (e.g. <option value="...">).
+function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str ?? ''; return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 function getQueryParam(name) { return new URLSearchParams(window.location.search).get(name); }
 
 function wordCount(str) { return (str || '').trim().split(/\s+/).filter(Boolean).length; }

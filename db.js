@@ -100,6 +100,53 @@ async function companyStats(companyId) {
   };
 }
 
+// Companies plus their review stats in ONE query (replaces getCompanies + a companyStats call per company).
+// Returns [{ company, stats }] where stats matches the shape companyStats() returns.
+async function getCompaniesWithStats({ search, tier, role } = {}) {
+  const clauses = [];
+  const params = [];
+  if (search) { params.push(`%${search}%`); clauses.push(`c.name ILIKE $${params.length}`); }
+  if (tier) { params.push(Number(tier)); clauses.push(`c.tier = $${params.length}`); }
+  if (role) {
+    params.push(`%${role}%`);
+    clauses.push(`c.id IN (SELECT company_id FROM reviews WHERE role ILIKE $${params.length})`);
+  }
+  const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
+  const { rows } = await pool.query(
+    `SELECT c.*,
+            COALESCE(s.review_count, 0) AS review_count,
+            s.avg_rating, s.avg_difficulty,
+            tr.role AS most_common_role
+     FROM companies c
+     LEFT JOIN (
+       SELECT company_id,
+              COUNT(*)::int AS review_count,
+              ROUND(AVG(rating)::numeric, 1) AS avg_rating,
+              ROUND(AVG(difficulty_to_get)::numeric, 1) AS avg_difficulty
+       FROM reviews GROUP BY company_id
+     ) s ON s.company_id = c.id
+     LEFT JOIN (
+       SELECT DISTINCT ON (company_id) company_id, role
+       FROM (SELECT company_id, role, COUNT(*) AS n FROM reviews GROUP BY company_id, role) rc
+       ORDER BY company_id, n DESC, role ASC
+     ) tr ON tr.company_id = c.id
+     ${where}
+     ORDER BY c.name`, params
+  );
+  return rows.map(row => {
+    const { review_count, avg_rating, avg_difficulty, most_common_role, ...company } = row;
+    return {
+      company,
+      stats: {
+        reviewCount: Number(review_count) || 0,
+        avgRating: avg_rating !== null && avg_rating !== undefined ? Number(avg_rating) : null,
+        avgDifficulty: avg_difficulty !== null && avg_difficulty !== undefined ? Number(avg_difficulty) : null,
+        mostCommonRole: most_common_role || null
+      }
+    };
+  });
+}
+
 // ---------- reviews ----------
 
 async function getReviewsForCompany(companyId, role) {
@@ -157,12 +204,10 @@ async function createReport({ reviewId, companyId, companyName, reason, details 
 // ---------- leaderboard ----------
 
 async function getLeaderboard(tier) {
-  const companies = await getCompanies(tier ? { tier } : {});
-  const ranked = [];
-  for (const c of companies) {
-    const stats = await companyStats(c.id);
-    if (stats.reviewCount > 0) ranked.push({ ...c, stats });
-  }
+  const rows = await getCompaniesWithStats(tier ? { tier } : {});
+  const ranked = rows
+    .filter(({ stats }) => stats.reviewCount > 0)
+    .map(({ company, stats }) => ({ ...company, stats }));
   ranked.sort((a, b) => b.stats.avgRating - a.stats.avgRating);
   return ranked;
 }
@@ -195,7 +240,7 @@ async function setReviewSpamScore(reviewId, spamScore, spamLevel, spamReasons) {
 
 module.exports = {
   pool,
-  getCompanies, getCompanyById, createCompany, updateCompany, findOrCreateCompany,
+  getCompanies, getCompaniesWithStats, getCompanyById, createCompany, updateCompany, findOrCreateCompany,
   companyStats, getReviewsForCompany, getReviewById, createReview, deleteReview,
   getRecentReviews, createReport, getLeaderboard, createContactSubmission,
   getReviewsByCompany, setReviewSpamScore
